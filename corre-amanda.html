@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Corre Amanda! 🦖</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .game-container {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px 28px 20px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+
+    .high-score {
+      font-size: 18px;
+      color: #bbb;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      width: 1440px;
+      height: 780px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+      border: 2px solid #e8e8e8;
+      cursor: pointer;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 1440px;
+      height: 780px;
+    }
+
+    #sprite {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 10;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      transition: transform 0.08s ease-out;
+      background-image: url('img/sprite-animation.png');
+      background-repeat: no-repeat;
+      background-size: 300% 200%;
+    }
+
+    #title-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+      pointer-events: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    #title-screen.visible {
+      display: flex;
+    }
+
+    .title-logo {
+      background: url('img/title.png') center / contain no-repeat;
+      width: 520px;
+      height: 180px;
+      opacity: 0;
+      transform: scale(0.8) translateY(20px);
+      animation: titleEnter 0.6s ease-out 0.2s forwards;
+    }
+
+    .title-highscore {
+      font-family: 'Courier New', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #999;
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 0.6s forwards;
+      margin-top: 12px;
+    }
+
+    .title-prompt {
+      font-family: 'Courier New', monospace;
+      font-size: 28px;
+      font-weight: 700;
+      color: #535353;
+      letter-spacing: 1px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 1s forwards;
+      margin-top: 50px;
+    }
+
+    .title-prompt .blink {
+      animation: promptPulse 1.2s ease-in-out infinite 1.4s;
+    }
+
+    .title-subtitle {
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      color: #bbb;
+      letter-spacing: 0.5px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 1.3s forwards;
+      margin-top: 16px;
+    }
+
+    @keyframes titleEnter {
+      from {
+        opacity: 0;
+        transform: scale(0.8) translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes promptPulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @media (max-width: 1520px) {
+      .title-logo {
+        width: 320px;
+        height: 110px;
+      }
+
+      .title-prompt {
+        font-size: 22px;
+        margin-top: 30px;
+      }
+
+      .title-subtitle {
+        font-size: 13px;
+      }
+
+      .title-highscore {
+        font-size: 17px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .title-logo {
+        width: 240px;
+        height: 82px;
+      }
+
+      .title-prompt {
+        font-size: 18px;
+        margin-top: 24px;
+      }
+
+      .title-subtitle {
+        font-size: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .title-logo,
+      .title-highscore,
+      .title-prompt,
+      .title-subtitle {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    .controls-hint {
+      text-align: center;
+      margin-top: 18px;
+      font-size: 16px;
+      color: #bbb;
+    }
+
+    .controls-hint kbd {
+      background: #f5f5f5;
+      padding: 4px 14px;
+      border-radius: 5px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      font-family: inherit;
+      color: #666;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .controls-hint span.sep {
+      color: #ddd;
+      margin: 0 6px;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      20% {
+        transform: translateX(-5px);
+      }
+
+      40% {
+        transform: translateX(5px);
+      }
+
+      60% {
+        transform: translateX(-3px);
+      }
+
+      80% {
+        transform: translateX(3px);
+      }
+    }
+
+    .shake {
+      animation: shake 0.3s ease-in-out;
+    }
+
+    /* Responsive */
+    @media (max-width: 1520px) {
+      body {
+        align-items: stretch;
+        background: #fff;
+      }
+
+      .game-container {
+        border-radius: 0;
+        padding: 16px 12px 14px;
+        box-shadow: none;
+        width: 100%;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .canvas-wrapper {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1440 / 780;
+      }
+
+      canvas {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1440 / 780;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .controls-hint {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="game-container">
+    <span class="high-score" id="highScoreDisplay">HI 00000</span>
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="game" width="1440" height="780"></canvas>
+      <div id="title-screen">
+        <div class="title-logo"></div>
+        <div class="title-highscore" id="titleHiScore"></div>
+        <div class="title-prompt"><span class="blink">Pressione ESPAÇO para começar</span></div>
+        <div class="title-subtitle">Pule · Esquive · Colete estrelas</div>
+      </div>
+      <div id="sprite"></div>
+    </div>
+    <div class="controls-hint">
+      <kbd>Espaço</kbd> ou <kbd>↑</kbd> pular
+      <span class="sep">·</span>
+      <kbd>↓</kbd> agachar
+      <span class="sep">·</span>
+      toque para pular
+    </div>
+  </div>
+
+  <script>
+    // ================================================================
+    // CORRE AMANDA! — Chrome Dinosaur Game Clone
+    // ================================================================
+
+    // --- DOM refs ---
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = 1440;
+    const H = 780;
+    const GROUND_Y = 577;
+
+    const sprite = document.getElementById('sprite');
+    const highScoreEl = document.getElementById('highScoreDisplay');
+    const wrapper = document.getElementById('canvasWrapper');
+
+    // --- Spritesheet preload (PNG 3×2) ---
+    let spriteLoaded = true;
+    const spriteImg = new Image();
+    spriteImg.onload = () => { spriteLoaded = true; };
+    spriteImg.onerror = () => {
+      spriteLoaded = false;
+      sprite.style.display = 'none';
+      console.warn('Sprite PNG não encontrado — usando fallback em canvas.');
+    };
+    spriteImg.src = 'img/sprite-animation.png';
+
+    // --- Enemy spritesheet preload (inimigo_.png 3×2, 2048×2048) ---
+    let enemyImgLoaded = false;
+    const enemyImg = new Image();
+    enemyImg.onload = () => { enemyImgLoaded = true; };
+    enemyImg.onerror = () => {
+      enemyImgLoaded = false;
+      console.warn('Enemy PNG não encontrado — usando fallback.');
+    };
+    enemyImg.src = 'img/inimigo_.png';
+    const ENEMY_FRAME_W = 2048 / 3;
+    const ENEMY_FRAME_H = 2048 / 2;
+
+    // --- Sprite sizing (spritesheet PNG: 341×512 → scaled to ~137px wide) ---
+    const SPRITE_W = 137;
+    const SPRITE_H = Math.round(512 * (137 / 341));  // ≈ 206
+    sprite.style.width = SPRITE_W + 'px';
+    sprite.style.height = SPRITE_H + 'px';
+
+    // --- Constants ---
+    const GRAVITY = 1.7;
+    const JUMP_VEL = -38;
+    const START_SPEED = 19;
+    const MAX_SPEED = 44;
+    const SPEED_GROWTH = 0.0008;
+    const STAR_BONUS = 50;
+    const STAR_SPAWN_MIN = 70;
+    const STAR_SPAWN_MAX = 130;
+    const POWERUP_SPAWN_MIN = 400;
+    const POWERUP_SPAWN_MAX = 700;
+    const POWERUP_DURATION = 300; // frames (~5s at 60fps)
+    const STAR_Y_FLOOR = 420;
+    const STAR_Y_CEIL = 200;
+    const POWERUP_Y_FLOOR = 450;
+    const POWERUP_Y_CEIL = 330;
+    const POWERUP_TYPES = ['INVINCIBILITY', 'SCORE_BOOST', 'SHIELD'];
+
+    // --- State ---
+    const state = {
+      speed: START_SPEED,
+      score: 0,
+      highScore: parseInt(localStorage.getItem('correAmandaHi') || '0'),
+      phase: 'WAITING',   // WAITING | PLAYING | GAME_OVER
+      frame: 0,
+      groundX: 0,
+      obstacles: [],
+      spawnTimer: 0,
+      minGap: 312,
+      flash: 0,
+      stars: [],
+      powerUps: [],
+      starCount: 0,
+      activePowerUp: null,
+      starSpawnTimer: 0,
+      powerUpSpawnTimer: 0,
+      clouds: [],
+      cloudSpawnTimer: 0,
+    };
+
+    // --- Player ---
+    const player = {
+      x: 250,
+      y: GROUND_Y,       // bottom (feet) position
+      vy: 0,
+      w: 137,
+      h: 150,
+      duckH: 87,
+      jumping: false,
+      ducking: false,
+    };
+
+    // --- Cloud config (parallax layers) ---
+    // Layer 0: far/slow, Layer 1: mid, Layer 2: near/fast
+    const CLOUD_LAYERS = [
+      { speed: 0.15, alpha: 0.06, yMin: 40, yMax: 220, sizeMin: 120, sizeMax: 280 },
+      { speed: 0.35, alpha: 0.09, yMin: 60, yMax: 260, sizeMin: 90, sizeMax: 200 },
+      { speed: 0.6, alpha: 0.04, yMin: 80, yMax: 300, sizeMin: 60, sizeMax: 140 },
+    ];
+    const CLOUD_SPAWN_MIN = 180;
+    const CLOUD_SPAWN_MAX = 360;
+
+    function spawnCloud() {
+      const li = rand(0, 2);
+      const layer = CLOUD_LAYERS[li];
+      const w = rand(layer.sizeMin, layer.sizeMax);
+      state.clouds.push({
+        x: W + rand(10, 60),
+        y: rand(layer.yMin, layer.yMax),
+        w: w,
+        h: w * 0.35 + rand(-8, 8),
+        layer: li,
+      });
+    }
+
+    // --- Obstacle config (enemy sprite 3×2) ---
+    const ENEMY_SIZES = [
+      { w: 120, h: 180 },   // small enemy
+      { w: 160, h: 260 },   // large enemy
+    ];
+
+    // ================================================================
+    // HELPERS
+    // ================================================================
+
+    function getHi() {
+      return parseInt(localStorage.getItem('correAmandaHi') || '0');
+    }
+    function setHi(v) {
+      if (v > getHi()) localStorage.setItem('correAmandaHi', '' + v);
+    }
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+    function aabb(a, b) {
+      return a.x < b.x + b.w && a.x + a.w > b.x &&
+        a.y < b.y + b.h && a.y + a.h > b.y;
+    }
+
+    function fmtScore(n) {
+      return Math.floor(n).toString().padStart(5, '0');
+    }
+
+    /** Returns the spritesheet frame index (0–5) based on player state */
+    function getSpriteFrame() {
+      if (state.phase === 'WAITING') {
+        return 0; // frame 0 — stopped (idle pose)
+      } else if (player.jumping) {
+        return 5; // frame 5 (row 1, col 2) — jump pose
+      } else if (player.ducking) {
+        return 3 + (Math.floor(state.frame / 6) % 2); // frames 3-4 (row 1) — duck cycle
+      } else {
+        return Math.floor(state.frame / 4) % 3; // frames 0-2 (row 0) — run cycle
+      }
+    }
+
+    let lastTitlePhase = '';
+    /** Show/hide the title screen based on game phase */
+    function updateTitleScreen() {
+      if (state.phase === lastTitlePhase) return;
+      lastTitlePhase = state.phase;
+      const el = document.getElementById('title-screen');
+      if (el) {
+        el.classList.toggle('visible', state.phase === 'WAITING');
+      }
+      // Update high score on title screen (only on transition)
+      if (state.phase === 'WAITING') {
+        const hiEl = document.getElementById('titleHiScore');
+        if (hiEl) {
+          const hi = getHi();
+          hiEl.textContent = hi > 0 ? 'RECORDE: ' + fmtScore(hi) : '';
+          hiEl.style.display = hi > 0 ? 'block' : 'none';
+        }
+      }
+    }
+
+    /** AABB vs circle collision detection */
+    function aabbCircle(box, circle) {
+      const cx = circle.x, cy = circle.y, r = circle.r;
+      const closestX = Math.max(box.x, Math.min(cx, box.x + box.w));
+      const closestY = Math.max(box.y, Math.min(cy, box.y + box.h));
+      const dx = cx - closestX, dy = cy - closestY;
+      return (dx * dx + dy * dy) < (r * r);
+    }
+
+    /** Draw a 5-pointed star path (centered at cx,cy) */
+    function drawStarShape(cx, cy, outerR, innerR) {
+      let rot = -Math.PI / 2;
+      const step = Math.PI / 5;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? outerR : innerR;
+        const x = cx + r * Math.cos(rot);
+        const y = cy + r * Math.sin(rot);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.closePath();
+    }
+
+    /** Spawn a collectible star */
+    function spawnStar() {
+      state.stars.push({
+        x: W + rand(20, 80),
+        y: rand(STAR_Y_CEIL, STAR_Y_FLOOR),
+        r: 22,
+        collected: false,
+      });
+    }
+
+    /** Spawn a collectible power-up */
+    function spawnPowerUp() {
+      const type = POWERUP_TYPES[rand(0, POWERUP_TYPES.length - 1)];
+      state.powerUps.push({
+        x: W + rand(20, 80),
+        y: rand(POWERUP_Y_CEIL, POWERUP_Y_FLOOR),
+        r: 28,
+        type,
+        collected: false,
+      });
+    }
+
+    /** Activate a power-up of the given type */
+    function activatePowerUp(type) {
+      state.activePowerUp = { type, timer: POWERUP_DURATION, duration: POWERUP_DURATION };
+    }
+
+    /** Deactivate the current power-up */
+    function deactivatePowerUp() {
+      state.activePowerUp = null;
+    }
+
+    /** Scale factor between canvas internal resolution and CSS display size */
+    function getScale() {
+      return canvas.clientWidth / canvas.width;
+    }
+
+    // ================================================================
+    // OBSTACLE FACTORY
+    // ================================================================
+
+    function makeEnemy() {
+      const cfg = ENEMY_SIZES[Math.random() < 0.6 ? 0 : 1];
+      return {
+        x: W,
+        y: GROUND_Y - cfg.h,
+        w: cfg.w,
+        h: cfg.h,
+        animFrame: 0,
+        animTimer: 0,
+      };
+    }
+
+    // ================================================================
+    // DRAW
+    // ================================================================    /** Draw a fluffy cloud shape using overlapping ellipses */
+    function drawCloudShape(cx, cy, w, h) {
+      const ex = w / 2;
+      const ey = h / 2;
+      // Main body
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, ex, ey, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Top bump left
+      ctx.beginPath();
+      ctx.ellipse(cx - ex * 0.4, cy - ey * 0.6, ex * 0.5, ey * 0.55, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Top bump right
+      ctx.beginPath();
+      ctx.ellipse(cx + ex * 0.3, cy - ey * 0.4, ex * 0.45, ey * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Center bump
+      ctx.beginPath();
+      ctx.ellipse(cx + ex * 0.05, cy - ey * 0.75, ex * 0.35, ey * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawSky() {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawClouds() {
+      for (const c of state.clouds) {
+        const layer = CLOUD_LAYERS[c.layer];
+        ctx.globalAlpha = layer.alpha;
+        ctx.fillStyle = '#535353';
+        drawCloudShape(c.x, c.y, c.w, c.h);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawGround() {
+        ctx.fillStyle = '#535353';
+        ctx.fillRect(0, GROUND_Y, W, 2);
+
+        const step = 22;
+        ctx.fillStyle = '#535353';
+        for (let i = -step; i < W + step; i += step) {
+          const x = i - (state.groundX % step);
+          ctx.fillRect(x, GROUND_Y + 8, 7, 2);
+        }
+      }
+
+    function drawEnemy(o) {
+        if (enemyImgLoaded) {
+          const col = o.animFrame % 3;
+          const row = Math.floor(o.animFrame / 3);
+          const sx = col * ENEMY_FRAME_W;
+          const sy = row * ENEMY_FRAME_H;
+
+          ctx.drawImage(
+            enemyImg,
+            sx, sy, ENEMY_FRAME_W, ENEMY_FRAME_H,
+            o.x, o.y, o.w, o.h
+          );
+        } else {
+          // Fallback: draw a simple rectangle enemy
+          ctx.fillStyle = '#535353';
+          ctx.fillRect(o.x, o.y, o.w, o.h);
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(o.x + o.w * 0.3, o.y + o.h * 0.15, o.w * 0.12, o.h * 0.12);
+          ctx.fillRect(o.x + o.w * 0.58, o.y + o.h * 0.15, o.w * 0.12, o.h * 0.12);
+        }
+      }
+
+      function drawFallbackPlayer() {
+        const ch = player.ducking && !player.jumping ? player.duckH : player.h;
+        const cw = player.ducking && !player.jumping ? player.w + 10 : player.w;
+        const py = player.y - ch;
+        const px = player.x;
+
+        ctx.fillStyle = '#535353';
+        // body
+        ctx.fillRect(px + 8, py, 20, ch - 8);
+        ctx.fillRect(px + 4, py + 8, cw - 8, ch - 16);
+        ctx.fillRect(px, py + 10, cw, ch - 18);
+        // head
+        ctx.fillRect(px + cw - 16, py - 8, 16, 12);
+        // eye
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(px + cw - 8, py - 6, 4, 4);
+        ctx.fillStyle = '#535353';
+        ctx.fillRect(px + cw - 4, py - 2, 6, 2);
+        // legs (animated)
+        if (Math.floor(state.frame / 4) % 2 === 0) {
+          ctx.fillRect(px + 10, py + ch - 8, 6, 8);
+          ctx.fillRect(px + 24, py + ch - 4, 6, 4);
+        } else {
+          ctx.fillRect(px + 10, py + ch - 4, 6, 4);
+          ctx.fillRect(px + 24, py + ch - 8, 6, 8);
+        }
+        // tail
+        ctx.fillRect(px - 4, py + 14, 6, 6);
+      }
+
+      function drawCollectibles() {
+        for (const s of state.stars) {
+          if (!s.collected) drawStar(s);
+        }
+        for (const p of state.powerUps) {
+          if (!p.collected) drawPowerUp(p);
+        }
+      }
+
+      function drawStar(s) {
+        const pulse = Math.sin(state.frame * 0.06) * 3;
+        const r = s.r + pulse;
+
+        ctx.save();
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 20;
+
+        const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+        grad.addColorStop(0, '#FFF8DC');
+        grad.addColorStop(0.4, '#FFD700');
+        grad.addColorStop(1, '#FF8C00');
+        ctx.fillStyle = grad;
+        drawStarShape(s.x, s.y, r, r * 0.4);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawPowerUp(p) {
+        const pulse = Math.sin(state.frame * 0.05) * 3;
+        const r = p.r + pulse;
+
+        ctx.save();
+        ctx.shadowBlur = 25;
+
+        switch (p.type) {
+          case 'INVINCIBILITY':
+            ctx.shadowColor = '#FFD700';
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold ' + Math.round(r * 1.2) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('★', p.x, p.y + 3);
+            break;
+          case 'SCORE_BOOST':
+            ctx.shadowColor = '#00BFFF';
+            ctx.fillStyle = '#00BFFF';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - r);
+            ctx.lineTo(p.x + r, p.y);
+            ctx.lineTo(p.x, p.y + r);
+            ctx.lineTo(p.x - r, p.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold ' + Math.round(r * 0.6) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('x2', p.x, p.y + 2);
+            break;
+          case 'SHIELD':
+            ctx.shadowColor = '#32CD32';
+            ctx.fillStyle = '#32CD32';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold ' + Math.round(r * 0.6) + 'px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🛡', p.x, p.y + 2);
+            break;
+        }
+        ctx.restore();
+      }
+
+      function drawEnhancedHUD() {
+        // Star count (top-left)
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.fillStyle = '#FFD700';
+        ctx.fillText('⭐ ' + state.starCount, 30, 30);
+
+        // Active power-up HUD
+        if (state.activePowerUp) {
+          const remaining = Math.ceil(state.activePowerUp.timer / 60);
+          const pct = state.activePowerUp.timer / state.activePowerUp.duration;
+
+          let label = '', color = '';
+          switch (state.activePowerUp.type) {
+            case 'INVINCIBILITY': label = '★ INVENCÍVEL'; color = '#FFD700'; break;
+            case 'SCORE_BOOST': label = '⚡ 2X PONTOS'; color = '#00BFFF'; break;
+            case 'SHIELD': label = '🛡 ESCUDO'; color = '#32CD32'; break;
+          }
+
+          ctx.fillStyle = color;
+          ctx.font = 'bold 18px "Courier New", monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(label, 30, 65);
+
+          // Timer bar
+          const barX = 30, barY = 90, barW = 180, barH = 10;
+          ctx.fillStyle = '#eee';
+          ctx.fillRect(barX, barY, barW, barH);
+          ctx.fillStyle = color;
+          ctx.fillRect(barX, barY, barW * pct, barH);
+          ctx.strokeStyle = '#ccc';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(barX, barY, barW, barH);
+
+          ctx.fillStyle = '#888';
+          ctx.font = '11px "Courier New", monospace';
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(remaining + 's', barX + barW, barY + barH - 1);
+        }
+      }
+
+      function drawScore() {
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = '#535353';
+        ctx.font = 'bold 30px "Courier New", monospace';
+        ctx.fillText(fmtScore(state.score), W - 30, 30);
+
+        if (state.highScore > 0) {
+          ctx.fillStyle = '#bbb';
+          ctx.font = '20px "Courier New", monospace';
+          ctx.fillText('HI ' + fmtScore(state.highScore), W - 200, 36);
+        }
+      }
+
+      function drawUI() {
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        if (state.phase === 'GAME_OVER') {
+          ctx.fillStyle = '#535353';
+          ctx.font = 'bold 52px "Courier New", monospace';
+          ctx.fillText('GAME OVER', W / 2, 280);
+          ctx.fillStyle = '#999';
+          ctx.font = '22px "Courier New", monospace';
+          ctx.fillText('Pressione ESPAÇO para reiniciar', W / 2, 340);
+        }
+      }
+
+      // ================================================================
+      // RENDER (main)
+      // ================================================================
+
+      function render() {
+        drawSky();
+        drawClouds();
+        drawGround();
+        for (const o of state.obstacles) drawEnemy(o);
+
+        // Draw collectibles (stars & power-ups)
+        drawCollectibles();
+
+        // If the spritesheet failed to load, draw the fallback on canvas
+        if (!spriteLoaded) {
+          drawFallbackPlayer();
+        }
+
+        drawScore();
+        drawEnhancedHUD();
+        drawUI();
+      }
+
+      // ================================================================
+      // SPRITE POSITIONING
+      // ================================================================
+
+      function moveSprite() {
+        // On responsive layouts the canvas is CSS-scaled; adjust sprite accordingly
+        const scale = getScale();
+
+        // Sprite bottom aligns with player.y (feet)
+        const top = player.y - SPRITE_H;
+
+        sprite.style.left = (player.x * scale) + 'px';
+        sprite.style.top = (top * scale) + 'px';
+        sprite.style.width = (SPRITE_W * scale) + 'px';
+        sprite.style.height = (SPRITE_H * scale) + 'px';
+
+        // --- Update spritesheet frame (PNG 3×2) ---
+        const frame = getSpriteFrame();
+        const col = frame % 3;
+        const row = Math.floor(frame / 3);
+        sprite.style.backgroundPosition = (col * 50) + '% ' + (row * 100) + '%';
+
+        if (player.ducking && !player.jumping) {
+          sprite.style.transform = 'scaleY(0.6)';
+          sprite.style.transformOrigin = 'bottom center';
+        } else {
+          sprite.style.transform = '';
+          sprite.style.transformOrigin = '';
+        }
+      }
+
+      // ================================================================
+      // UPDATE
+      // ================================================================
+
+      function update() {
+        state.frame++;
+
+        // Keep title screen visibility in sync with game phase
+        updateTitleScreen();
+
+      // --- Cloud spawn & movement (all phases) ---
+      state.cloudSpawnTimer++;
+      if (state.cloudSpawnTimer >= rand(CLOUD_SPAWN_MIN, CLOUD_SPAWN_MAX)) {
+        state.cloudSpawnTimer = 0;
+        spawnCloud();
+      }
+      const cloudSpeed = state.phase === 'PLAYING' ? state.speed : 1.0;
+      for (let i = state.clouds.length - 1; i >= 0; i--) {
+        const c = state.clouds[i];
+        c.x -= cloudSpeed * CLOUD_LAYERS[c.layer].speed;
+        if (c.x + c.w < -60) state.clouds.splice(i, 1);
+      }
+
+      if (state.phase === 'WAITING') {
+        // Subtle idle bob — position sprite with scale first, then apply bob
+        moveSprite();
+        const bob = Math.sin(state.frame * 0.04) * 2;
+        const scale = getScale();
+        const baseTop = (player.y - SPRITE_H) * scale;
+        sprite.style.top = (baseTop + bob * scale) + 'px';
+        return;
+      }
+
+      if (state.phase === 'GAME_OVER') {
+        if (state.flash > 0) state.flash--;
+        return;
+      }
+
+        // ---- PLAYING ----
+
+        state.speed = Math.min(MAX_SPEED, START_SPEED + state.score * SPEED_GROWTH);
+
+        // Ground scroll
+        state.groundX += state.speed;
+
+        // Player jump physics
+        if (player.jumping) {
+          player.vy += GRAVITY;
+          player.y += player.vy;
+          if (player.y >= GROUND_Y) {
+            player.y = GROUND_Y;
+            player.vy = 0;
+            player.jumping = false;
+          }
+          // Fast-fall when ducking in air
+          if (player.ducking) player.vy += 1.1;
+        }
+
+        moveSprite();
+
+        // --- Stars spawn ---
+        state.starSpawnTimer++;
+        const starGap = rand(STAR_SPAWN_MIN, STAR_SPAWN_MAX);
+        if (state.starSpawnTimer >= starGap) {
+          state.starSpawnTimer = 0;
+          spawnStar();
+        }
+
+        // --- Power-ups spawn ---
+        state.powerUpSpawnTimer++;
+        const puGap = rand(POWERUP_SPAWN_MIN, POWERUP_SPAWN_MAX);
+        if (state.powerUpSpawnTimer >= puGap) {
+          state.powerUpSpawnTimer = 0;
+          spawnPowerUp();
+        }
+
+        // Spawn obstacles
+        state.spawnTimer++;
+        const gap = Math.max(140, state.minGap - state.score * 0.025);
+        if (state.spawnTimer >= gap) {
+          state.spawnTimer = 0;
+          state.obstacles.push(makeEnemy());
+        }
+
+        // Player hitbox (slightly smaller than visual for fairness)
+        const ph = player.ducking && !player.jumping ? player.duckH : player.h;
+        const pw = player.ducking && !player.jumping ? player.w + 10 : player.w;
+        const box = {
+          x: player.x + 7,
+          y: player.y - ph + 5,
+          w: pw - 14,
+          h: ph - 10,
+        };
+
+        // Move stars & check collection
+        for (let i = state.stars.length - 1; i >= 0; i--) {
+          const s = state.stars[i];
+          if (s.collected) continue;
+          s.x -= state.speed;
+
+          if (aabbCircle(box, s)) {
+            s.collected = true;
+            state.starCount++;
+            state.score += STAR_BONUS;
+          }
+
+          if (s.x + s.r < -40) state.stars.splice(i, 1);
+        }
+
+        // Move power-ups & check collection
+        for (let i = state.powerUps.length - 1; i >= 0; i--) {
+          const p = state.powerUps[i];
+          if (p.collected) continue;
+          p.x -= state.speed;
+
+          if (aabbCircle(box, p)) {
+            p.collected = true;
+            activatePowerUp(p.type);
+          }
+
+          if (p.x + p.r < -40) state.powerUps.splice(i, 1);
+        }
+
+        // Move obstacles & check collision
+        for (let i = state.obstacles.length - 1; i >= 0; i--) {
+          const o = state.obstacles[i];
+          o.x -= state.speed;
+
+          // Animate enemy sprite (cycle through 6 frames)
+          o.animTimer++;
+          if (o.animTimer >= 8) {
+            o.animTimer = 0;
+            o.animFrame = (o.animFrame + 1) % 6;
+          }
+
+          if (aabb(box, o)) {
+            // Invincibility power-up: smash through enemies
+            if (state.activePowerUp && state.activePowerUp.type === 'INVINCIBILITY') {
+              state.obstacles.splice(i, 1);
+              continue;
+            }
+            // Shield power-up: absorb one hit
+            if (state.activePowerUp && state.activePowerUp.type === 'SHIELD') {
+              deactivatePowerUp();
+              state.obstacles.splice(i, 1);
+              // Flash effect
+              wrapper.classList.remove('shake');
+              void wrapper.offsetWidth;
+              wrapper.classList.add('shake');
+              continue;
+            }
+            state.phase = 'GAME_OVER';
+            state.flash = 30;
+            const final = Math.floor(state.score);
+            if (final > state.highScore) {
+              state.highScore = final;
+              setHi(final);
+              highScoreEl.textContent = 'HI ' + fmtScore(final);
+            }
+            // Shake effect
+            wrapper.classList.remove('shake');
+            void wrapper.offsetWidth; // force reflow to restart animation
+            wrapper.classList.add('shake');
+            return;
+          }
+
+          if (o.x + o.w < -20) state.obstacles.splice(i, 1);
+        }
+
+        // Update active power-up timer
+        if (state.activePowerUp) {
+          state.activePowerUp.timer--;
+          if (state.activePowerUp.timer <= 0) {
+            deactivatePowerUp();
+          }
+        }
+
+        // Score increment (boosted when SCORE_BOOST active)
+        const scoreMult = (state.activePowerUp && state.activePowerUp.type === 'SCORE_BOOST') ? 2 : 1;
+        state.score += 0.1 * scoreMult;
+      }
+
+      // ================================================================
+      // GAME LOOP
+      // ================================================================
+
+      function loop() {
+        update();
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      // ================================================================
+      // INPUT
+      // ================================================================
+
+      function jump() {
+        if (state.phase === 'WAITING' || state.phase === 'GAME_OVER') {
+          reset();
+          return;
+        }
+        if (!player.jumping) {
+          player.vy = JUMP_VEL;
+          player.jumping = true;
+        }
+      }
+
+      function duck(on) {
+        if (state.phase !== 'PLAYING') return;
+        player.ducking = on;
+        if (!on) {
+          sprite.style.transform = '';
+          sprite.style.transformOrigin = '';
+        }
+      }
+
+      document.addEventListener('keydown', e => {
+        if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'Space') {
+          e.preventDefault();
+          jump();
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          duck(true);
+        }
+      });
+
+      document.addEventListener('keyup', e => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          duck(false);
+        }
+      });
+
+      canvas.addEventListener('click', jump);
+
+      canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        jump();
+        // Touch in lower 40% → duck
+        const t = e.touches ? e.touches[0] : e.changedTouches[0];
+        if (t) {
+          const rect = canvas.getBoundingClientRect();
+          const relY = (t.clientY - rect.top) / rect.height;
+          if (relY > 0.6) duck(true);
+        }
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', e => {
+        e.preventDefault();
+        duck(false);
+      }, { passive: false });
+
+      // ================================================================
+      // RESET
+      // ================================================================
+
+      function reset() {
+        state.speed = START_SPEED;
+        state.score = 0;
+        state.frame = 0;
+        state.groundX = 0;
+        state.obstacles = [];
+        state.spawnTimer = 0;
+        state.flash = 0;
+        state.stars = [];
+        state.powerUps = [];
+        state.starCount = 0;
+        state.activePowerUp = null;
+      state.starSpawnTimer = 0;
+      state.powerUpSpawnTimer = 0;
+      state.cloudSpawnTimer = 0;
+      state.phase = 'PLAYING';
+
+        player.y = GROUND_Y;
+        player.vy = 0;
+        player.jumping = false;
+        player.ducking = false;
+        sprite.style.transform = '';
+        sprite.style.transformOrigin = '';
+        moveSprite();
+      }
+
+      // ================================================================
+      // BOOT
+      // ================================================================
+
+      // Show saved high score
+      if (state.highScore > 0) {
+        highScoreEl.textContent = 'HI ' + fmtScore(state.highScore);
+      }
+
+      // Initial sprite position (idle on ground) — uses getScale() for responsive layouts
+      moveSprite();
+
+      // Show title screen immediately
+      updateTitleScreen();
+
+      // Start the game loop
+      loop();
+  </script>
+</body>
+
+</html>
