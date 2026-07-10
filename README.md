@@ -2,6 +2,8 @@
 
 Um clone do jogo do dinossauro do Chrome, completamente reimplementado em HTML5 Canvas com sprites personalizados, power-ups e sistema de parallax.
 
+**[🎮 JOGUE AGORA](https://carlosnani.github.io/rungame/)**
+
 ## 🎮 Como Jogar
 
 | Controle | Ação |
@@ -48,7 +50,7 @@ Um clone do jogo do dinossauro do Chrome, completamente reimplementado em HTML5 
 
 ```bash
 # Clone o repositório
-git clone https://github.com/SEU-USUARIO/rungame.git
+git clone https://github.com/carlosnani/rungame.git
 cd rungame
 
 # Abra o index.html no navegador
